@@ -25,6 +25,7 @@ class DatabaseClient:
         result_format: Literal["markdown", "duckbox", "text"] = "markdown",
         home_dir: str | None = None,
         saas_mode: bool = False,
+        readonly: bool = False
     ):
         self.db_path, self.db_type = self._resolve_db_path_type(
             db_path, motherduck_token, saas_mode
@@ -37,15 +38,21 @@ class DatabaseClient:
 
         self.conn = self._initialize_connection()
         self.result_format = result_format
+        self._readonly = readonly
 
     def _initialize_connection(self) -> duckdb.DuckDBPyConnection:
         """Initialize connection to the MotherDuck or DuckDB database"""
 
         logger.info(f"🔌 Connecting to {self.db_type} database")
 
+        kw = {}
+        if self.db_type == "duckdb":
+            kw["read_only"] = self._readonly
+
         conn = duckdb.connect(
             self.db_path,
             config={"custom_user_agent": f"mcp-server-motherduck/{SERVER_VERSION}"},
+            **kw,
         )
 
         logger.info(f"✅ Successfully connected to {self.db_type} database")
